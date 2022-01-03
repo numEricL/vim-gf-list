@@ -2,18 +2,14 @@
 if !exists('g:GfList_map_n_gf')
     let g:GfList_map_n_gf = 'gf'
 endif
-if !exists('g:GfList_map_n_gF')
-    let g:GfList_map_n_gF = 'gF'
-endif
 if !exists('g:GfList_map_v_gf')
     let g:GfList_map_v_gf = 'gf'
 endif
 
-execute "nnoremap ".g:GfList_map_n_gf." :call GfList(expand('<cfile>'), 0, 0)<cr>"
-execute "nnoremap ".g:GfList_map_n_gF." :call <sid>GfList_n_gF()<cr>"
-execute "vnoremap ".g:GfList_map_v_gf." :<c-u>call <sid>GfList_v_gf()<cr>"
+execute "nnoremap ".g:GfList_map_n_gf." :call <sid>Map_n_gf()<cr>"
+execute "vnoremap ".g:GfList_map_v_gf." :<c-u>call <sid>Map_v_gf()<cr>"
 
-function GfList(filename, line, col) abort
+function s:GfList(filename, line, col) abort
     let l:files = findfile(a:filename,"",-1)
     if len(l:files) == 0
         echohl ErrorMsg | echomsg "Can't find file \"".a:filename."\" in path" | echohl none
@@ -45,27 +41,27 @@ function GfList(filename, line, col) abort
     normal! p
 endfunction
 
-function s:GfList_n_gF() abort
-    let [l:cfile, l:linenr, l:col] = GfList_GetCFile()
-    call GfList(l:cfile, l:linenr, l:col)
+function s:Map_n_gf() abort
+    let g:line = getline('.')
+    let g:line_index = match(g:line,expand('<cfile>'))
+    let [g:filename, g:linenr, g:col] = s:ParseFilename(g:line[g:line_index :])
+    call s:GfList(g:filename, g:linenr, g:col)
 endfunction
 
-function s:GfList_v_gf() abort
+function s:Map_v_gf() abort
     let l:reg=getreg('"')
     let l:regtype=getregtype('"')
     normal! gv""y
-    let l:filename=@"
+    let [l:filename, l:linenr, l:col] = s:ParseFilename(@")
     call setreg('"', l:reg, l:regtype)
 
-    call GfList(l:filename, line, col)
+    call s:GfList(l:filename, l:linenr, l:col)
 endfunction
 
-function GfList_GetCFile() abort
-    let l:line = getline('.')
-    let l:cfile = expand('<cfile>')
-    let regex = '[(:|]\(\d\+\) col \(\d\+\)|'
-    let l:file_matches = matchlist(l:line, l:cfile..l:regex)
-    let l:linenr = empty(l:file_matches[1])? 0 : l:file_matches[1]
-    let l:col = empty(l:file_matches[2])? 0 : l:file_matches[2]
-    return [l:cfile, l:linenr, l:col]
+function s:ParseFilename(line) abort
+    let l:seperator_index = match(a:line, '[:|(#]')
+    let l:filename = a:line[0:l:seperator_index-1]
+    let l:linenr = matchstr(a:line[l:seperator_index+1 :], '\d\+')
+    let l:col    = matchstr(a:line[l:seperator_index+1 :], '\d\+', 0, len(l:linenr)+1)
+    return [l:filename, l:linenr, l:col]
 endfunction
