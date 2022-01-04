@@ -44,7 +44,7 @@ endfunction
 function s:Map_n_gf() abort
     let g:line = getline('.')
     let g:line_index = match(g:line,expand('<cfile>'))
-    let [g:filename, g:linenr, g:col] = s:ParseFilename(g:line[g:line_index :])
+    let [g:filename, g:linenr, g:col] = s:ParseFilename(g:line[g:line_index :], expand('<cfile>'))
     call s:GfList(g:filename, g:linenr, g:col)
 endfunction
 
@@ -52,14 +52,17 @@ function s:Map_v_gf() abort
     let l:reg=getreg('"')
     let l:regtype=getregtype('"')
     normal! gv""y
-    let [l:filename, l:linenr, l:col] = s:ParseFilename(@")
+    let [l:filename, l:linenr, l:col] = s:ParseFilename(@", @")
     call setreg('"', l:reg, l:regtype)
 
     call s:GfList(l:filename, l:linenr, l:col)
 endfunction
 
-function s:ParseFilename(line) abort
+function s:ParseFilename(line, filename_default) abort
     let l:seperator_index = match(a:line, '[:|(#]')
+    if l:seperator_index == -1
+        return [ a:filename_default, 0, 0 ]
+    endif
     let l:filename = a:line[0:l:seperator_index-1]
     let l:linenr = matchstr(a:line[l:seperator_index+1 :], '\d\+')
     let l:col    = matchstr(a:line[l:seperator_index+1 :], '\d\+', 0, len(l:linenr)+1)
