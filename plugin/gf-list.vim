@@ -42,29 +42,33 @@ function s:GfList(filename, line, col) abort
 endfunction
 
 function s:Map_n_gf() abort
-    let g:line = getline('.')
-    let g:line_index = match(g:line,expand('<cfile>'))
-    let [g:filename, g:linenr, g:col] = s:ParseFilename(g:line[g:line_index :], expand('<cfile>'))
-    call s:GfList(g:filename, g:linenr, g:col)
+    let l:line = getline('.')
+    let l:line_index = match(l:line,expand('<cfile>'))
+    let [l:filename, l:linenr, l:col] = s:ParseFilename(l:line[l:line_index :], expand('<cfile>'))
+    call s:GfList(l:filename, l:linenr, l:col)
 endfunction
 
 function s:Map_v_gf() abort
     let l:reg=getreg('"')
     let l:regtype=getregtype('"')
     normal! gv""y
-    let [l:filename, l:linenr, l:col] = s:ParseFilename(@", @")
+    let [l:filename, l:linenr, l:col] = s:ParseFilename(@", "")
     call setreg('"', l:reg, l:regtype)
 
     call s:GfList(l:filename, l:linenr, l:col)
 endfunction
 
-function s:ParseFilename(line, filename_default) abort
-    let l:seperator_index = match(a:line, '[:|(#]')
+function s:ParseFilename(line, filename) abort
+    let l:filename_end = matchend(a:line, a:filename)
+    let l:seperator_index = match(a:line[l:filename_end :], '[:|(#]')
     if l:seperator_index == -1
-        return [ a:filename_default, 0, 0 ]
+        let l:filename = !empty(a:filename)? a:filename : a:line
+        let l:linenr = 0
+        let l:col = 0
+    else
+        let l:filename = !empty(a:filename)? a:filename : a:line[0:l:seperator_index-1]
+        let l:linenr = matchstr(a:line[l:seperator_index+1 :], '\d\+')
+        let l:col = matchstr(a:line[l:seperator_index+1 :], '\d\+', 0, len(l:linenr)+1)
     endif
-    let l:filename = a:line[0:l:seperator_index-1]
-    let l:linenr = matchstr(a:line[l:seperator_index+1 :], '\d\+')
-    let l:col    = matchstr(a:line[l:seperator_index+1 :], '\d\+', 0, len(l:linenr)+1)
     return [l:filename, l:linenr, l:col]
 endfunction
