@@ -10,7 +10,7 @@ execute "nnoremap ".g:GfList_map_n_gf." :call <sid>Map_n_gf()<cr>"
 execute "vnoremap ".g:GfList_map_v_gf." :<c-u>call <sid>Map_v_gf()<cr>"
 
 function s:GfList(filename, line, col) abort
-    let l:files = findfile(a:filename,"",-1)
+    let l:files = s:FindFiles(a:filename)
     if len(l:files) == 0
         echohl ErrorMsg | echomsg "Can't find file \"".a:filename."\" in path" | echohl none
         return
@@ -71,4 +71,13 @@ function s:ParseFilename(line, filename) abort
         let l:col = matchstr(a:line[l:seperator_index+1 :], '\d\+', 0, len(l:linenr)+1)
     endif
     return [l:filename, l:linenr, l:col]
+endfunction
+
+function s:FindFiles(filename) abort
+    if stridx(a:filename, './') == 0 || stridx(a:filename, '../') == 0
+        let l:filepath = expand('%:h').'/'.a:filename
+        return filereadable(l:filepath) ? [l:filepath] : []
+    else
+        return findfile(a:filename, &path, -1)
+    endif
 endfunction
